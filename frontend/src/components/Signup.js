@@ -11,7 +11,12 @@ const Signup = ({ onSwitchToLogin }) => {
     e.preventDefault();
 
     if (username.trim() && password.trim()) {
-      signup(username, password);
+      const success = signup(username, password);
+
+      // ✅ ÇÖZÜM BURADA: Kayıt/Giriş başarılıysa sayfayı yenile
+      if (success) {
+        window.location.reload();
+      }
     }
   };
 

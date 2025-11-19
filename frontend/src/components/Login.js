@@ -8,10 +8,17 @@ const Login = () => {
   const { login, error } = useAuth();
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Sayfanın yenilenmesini engelle
 
     if (username.trim() && password.trim()) {
-      login(username, password);
+      const success = login(username, password);
+
+      // ✅ ÇÖZÜM BURADA: Giriş başarılıysa sayfayı yenile
+      if (success) {
+        // Bu, App.js'in yeniden yüklenmesini ve localStorage'dan
+        // yeni oturum durumunu okumasını sağlar.
+        window.location.reload();
+      }
     }
   };
 
