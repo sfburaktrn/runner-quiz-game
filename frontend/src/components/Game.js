@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useGameLoop } from "../hooks/useGameLoop";
+import Coin from "./Coin"; // Yeni Coin bileşenini import et
 
 // =================================================================
 // SABİTLER VE VERİLER
@@ -8,7 +9,6 @@ import { useGameLoop } from "../hooks/useGameLoop";
 const INITIAL_SPEED = 50; // Başlangıç hızı (metre/saniye)
 const CHASER_SPEED = 40; // Kovalayanın başlangıç hızı
 const GAME_STATE_KEY = "quizRunnerGameState"; // LocalStorage anahtarı
-const COIN_VALUE = 50; // Her coin kaç puan?
 
 // Soru Veri Yapısı
 const QUIZ_QUESTIONS = [
@@ -219,23 +219,6 @@ const Game = ({ currentUser }) => {
     // Normal skor artışı (mesafeye göre)
     setScore((prev) => prev + 1);
 
-    // COIN KONTROLÜ (YENİ)
-    // Runner bir coin'in üzerinden geçiyor mu? (+- 2 metre tolerans)
-    setCoins((prevCoins) => {
-      return prevCoins.map((coin) => {
-        if (
-          !coin.collected &&
-          Math.abs(coin.position - newRunnerPosition) < 2
-        ) {
-          // Coin toplandı!
-          setScore((s) => s + COIN_VALUE);
-          setCollectedCoinsCount((c) => c + 1);
-          return { ...coin, collected: true };
-        }
-        return coin;
-      });
-    });
-
     // Yeni Coin Üretimi (Coinler bitse bile üretmeye devam et)
     // Eğer hiç coin yoksa, referans noktamız koşucunun kendisidir.
     const lastCoin =
@@ -254,7 +237,7 @@ const Game = ({ currentUser }) => {
     // Geçmiş coinleri temizle (Performans için)
     if (coins.length > 50) {
       setCoins((prev) =>
-        prev.filter((c) => c.position > newRunnerPosition - 50)
+        prev.filter((c) => c.position > newRunnerPosition - 150)
       );
     }
 
@@ -290,6 +273,14 @@ const Game = ({ currentUser }) => {
       saveGame();
     }
   };
+
+  // Coin toplama mantığı artık Coin bileşeninin içinde.
+  // Bu fonksiyon, Coin bileşeninden gelen 'toplama' olayını işler.
+  const handleCollectCoin = useCallback((coinId) => {
+    setCoins((prevCoins) =>
+      prevCoins.map((c) => (c.id === coinId ? { ...c, collected: true } : c))
+    );
+  }, []);
 
   useGameLoop(updateGame);
 
@@ -404,31 +395,26 @@ const Game = ({ currentUser }) => {
           {/* COINS (ALTINLAR) - YENİ GÖRSELLEŞTİRME */}
           {coins.map((coin) => {
             // Ekrandaki konumu hesapla
-            const distToRunner = coin.position - runnerPosition;
-            // Sadece ekranda görünebilecek mesafedeyse göster (Runner %50'de, ekran genişliği yaklaşık 200m gibi düşünürsek)
-            if (distToRunner > -100 && distToRunner < 200 && !coin.collected) {
-              // Koşucu %50'de. Coin, koşucuya olan mesafeye göre konumlandırılır.
-              const coinVisualPos = 50 + distToRunner / 2; // Basit oranlama
+            const distToRunner = coin.position - runnerPosition; // Render mesafesi kontrolü için
+            // Sadece ekranda görünebilecek mesafedeki coinleri render et
+            if (distToRunner > -120 && distToRunner < 220) {
+              // Koşucu %50'de sabit duruyor. Coin'in görsel pozisyonunu
+              // koşucuya olan mesafeye göre transform ile kaydırıyoruz.
+              const visualOffset = (coin.position - runnerPosition) * 4; // Bu çarpanı deneyerek ayarlayın
+
               return (
-                <div
+                <Coin
                   key={coin.id}
+                  coin={coin}
+                  runnerPosition={runnerPosition}
+                  onCollect={handleCollectCoin}
+                  setScore={setScore}
+                  setCollectedCoinsCount={setCollectedCoinsCount}
+                  // Dinamik stili burada iletiyoruz
                   style={{
-                    position: "absolute",
-                    left: `${coinVisualPos}%`,
-                    bottom: "35px", // Zeminden biraz yukarıda
-                    zIndex: 1,
-                    transition: "left 0.1s linear",
-                    // Emoji yerine CSS ile daire çizelim
-                    width: "20px",
-                    height: "20px",
-                    backgroundColor: "#FFD700", // Altın rengi
-                    borderRadius: "50%",
-                    border: "2px solid #DAA520", // Daha koyu bir kenarlık
-                    transform: "translateX(-50%)", // Ortalamak için
+                    transform: `translateX(calc(-50% + ${visualOffset}px))`,
                   }}
-                >
-                  {/* İçerik boş kalacak, stil ile görünecek */}
-                </div>
+                />
               );
             }
             return null;
