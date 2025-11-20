@@ -26,5 +26,5 @@ export const useGameLoop = (callback) => {
 
     // Temizleme: Komponent unmount olduğunda döngüyü durdur.
     return () => cancelAnimationFrame(requestRef.current);
-  }, []); // Sadece bir kez çalışsın
+  }, [callback]); // callback değişirse döngüyü yeniden kur
 };
