@@ -57,6 +57,7 @@ const Game = ({ currentUser }) => {
 
   // Coin Durumu (YENİ)
   const [coins, setCoins] = useState([]);
+  const [collectedCoinsCount, setCollectedCoinsCount] = useState(0); // Toplanan coin sayısı
 
   // Soru ve Engel Durumları
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -96,6 +97,7 @@ const Game = ({ currentUser }) => {
       chaserPos: chaserPosition,
       // Coinleri kaydetmek maliyetli olabilir, sadece skoru tutuyoruz.
       // Ancak oyun devamlılığı için mevcut coinleri de tutabiliriz.
+      collectedCoins: collectedCoinsCount,
       coins: coins.filter((c) => !c.collected && c.position > runnerPosition),
     };
     localStorage.setItem(
@@ -110,6 +112,7 @@ const Game = ({ currentUser }) => {
     chaserPosition,
     coins,
     currentUser,
+    collectedCoinsCount,
   ]);
 
   // Kayıtlı oyunu yükleme
@@ -128,6 +131,7 @@ const Game = ({ currentUser }) => {
       setChaserPosition(
         savedState.chaserPos !== undefined ? savedState.chaserPos : -50
       );
+      setCollectedCoinsCount(savedState.collectedCoins || 0);
 
       // Kayıtlı coinleri yükle veya yeni üret
       if (savedState.coins && savedState.coins.length > 0) {
@@ -156,6 +160,7 @@ const Game = ({ currentUser }) => {
     setChaserSpeed(CHASER_SPEED);
     setNextObstacleDistance(QUIZ_QUESTIONS[0].obstacleDistance);
     setCoins(spawnCoins(50, 500));
+    setCollectedCoinsCount(0);
     setIsPaused(false);
     setGameOver(false);
     setMessage(`Yeni oyun başladı! Başarılar ${currentUser}.`);
@@ -224,6 +229,7 @@ const Game = ({ currentUser }) => {
         ) {
           // Coin toplandı!
           setScore((s) => s + COIN_VALUE);
+          setCollectedCoinsCount((c) => c + 1);
           return { ...coin, collected: true };
         }
         return coin;
@@ -365,6 +371,7 @@ const Game = ({ currentUser }) => {
           <span>Mesafe: {runnerPosition.toFixed(0)}m</span>
           <span>Skor: {score}</span>
           <span>Hız: {gameSpeed.toFixed(1)} m/s</span>
+          <span>🪙 Toplanan: {collectedCoinsCount}</span>
           <span style={{ color: "red" }}>
             Kovalayan Fark: {distanceDiff.toFixed(1)}m
           </span>
@@ -400,20 +407,27 @@ const Game = ({ currentUser }) => {
             const distToRunner = coin.position - runnerPosition;
             // Sadece ekranda görünebilecek mesafedeyse göster (Runner %50'de, ekran genişliği yaklaşık 200m gibi düşünürsek)
             if (distToRunner > -100 && distToRunner < 200 && !coin.collected) {
-              const coinVisualPos = 50 + distToRunner / 4; // Basit oranlama
+              // Koşucu %50'de. Coin, koşucuya olan mesafeye göre konumlandırılır.
+              const coinVisualPos = 50 + distToRunner / 2; // Basit oranlama
               return (
                 <div
                   key={coin.id}
                   style={{
                     position: "absolute",
                     left: `${coinVisualPos}%`,
-                    bottom: "30px", // Zeminden biraz yukarıda
-                    fontSize: "24px",
+                    bottom: "35px", // Zeminden biraz yukarıda
                     zIndex: 1,
                     transition: "left 0.1s linear",
+                    // Emoji yerine CSS ile daire çizelim
+                    width: "20px",
+                    height: "20px",
+                    backgroundColor: "#FFD700", // Altın rengi
+                    borderRadius: "50%",
+                    border: "2px solid #DAA520", // Daha koyu bir kenarlık
+                    transform: "translateX(-50%)", // Ortalamak için
                   }}
                 >
-                  🪙
+                  {/* İçerik boş kalacak, stil ile görünecek */}
                 </div>
               );
             }
